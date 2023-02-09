@@ -1,0 +1,30 @@
+kind: "BuildConfig"
+apiVersion: "build.openshift.io/v1"
+metadata:
+  name: "busybox-server"
+spec:
+  runPolicy: "Serial"
+  triggers:
+    -
+      type: "GitHub"
+      github:
+        secret: "secret101"
+#    - type: "Generic"
+#      generic:
+#        secret: "secret101"
+#    -
+#      type: "ImageChange"
+  source:
+    git:
+      uri: "https://github.com/vicbul/busybox-server"
+  strategy:
+    sourceStrategy:
+      from:
+        kind: "ImageStreamTag"
+        name: "ecdp-busybox-server:latest"
+  output:
+    to:
+      kind: "ImageStreamTag"
+      name: "ecdp-busybox-server:latest"
+#  postCommit:
+#      script: "bundle exec rake test"
