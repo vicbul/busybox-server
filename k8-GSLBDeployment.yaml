@@ -1,0 +1,111 @@
+apiVersion: cae.cisco.com/v1
+
+kind: GSLBDeployment
+
+metadata:
+
+name: ecdp-gslb #Name of this Global Server Load Balancer Deployment
+
+spec:
+
+  globalHostname: <myapp>.cisco.com #Hostname that you will publish to your clients
+
+  #The section below describes the instances of your app in different data centers
+
+  targets: #This is a list of application instances in different data centers
+
+    - name: <myapp-alln> #A name to refer to this instance of your app
+
+      cluster: <cae-prd-alln> #OpenShift Project cluster the app instance is in
+
+      projectName: <myappsproject> #Name of OpenShift Project containing your app
+
+      globalRouteName: <myglobalroutename> #The name of the global route that will be created in your OpenShift project to support this GSLB.  Must end in -gslb.
+
+      enable: <true> #if true, traffic will be sent to the app.  If false, the app is temporarily disabled.
+
+      failoverMode: <active or passive> #Is this an active or passive instance of the app
+
+      serviceName: <myappsservice OR PGRN SVC OR PBLU SVC> #OpenShift Service name of your app
+
+      servicePortName: <TargetPort> #By Default, Set to Any. Optional. If GSLB has service two or more target ports ,then specify target port to route traffic to that particular service port.
+
+      weight: <number> #The weight value must be an integer from 0 to 256.
+
+      routeAlternateBackends: #Alternative route backends (another service that is not tied to main target service) can be specified under each target in the GSLB Deployment payload.
+
+        - serviceName: <PGRN OR PBLU SVC> #Another openshift service name of
+
+          weight: <number> #The weight value must be an integer from 0 to 256.
+
+      routeAnnotations: #To add the Annotations of GSLBs,Below routeAnnotations can be specified under each target in the GSLB Deployment payload. ex: haproxy timeout, disable cookies,etc
+
+        - <annotation-key1>: <val1>  #haproxy.router.openshift.io/balance: roundrobin
+
+          <annotation-key2>: <val2>  #haproxy.router.openshift.io/cookie_name: sample
+
+          <annotation-key3>: <val3>  #haproxy.router.openshift.io/timeout: 10m
+
+    - name: <myapp-rcdn> #The second instance of your application
+
+      cluster: <cae-prd-rcdn>
+
+      projectName: <myappsproject>
+
+      globalRouteName: <myglobalroutename> #The name of the global route that will be created in your OpenShift project to support this GSLB.  Must end in -gslb.
+
+      enable: <true>
+
+      failoverMode: <Active or passive>
+
+      serviceName: <myappsservice OR PGRN OR PBLU SVC> #OpenShift Service name of your app
+
+      servicePortName: <TargetPort> #By Default, Set to Any. Optional. If GSLB has service two or more target ports ,then specify target port to route traffic to that particular service port.
+
+      weight: <number> #The weight value must be an integer from 0 to 256.
+
+      routeAlternateBackends: #Alternative route backends (another service that is not tied to main target service) can be specified under each target in the GSLB Deployment payload.
+
+        - serviceName: <PGRN OR PBLU SVC> #Another openshift service name of
+
+          weight: <number> #The weight value must be an integer from 0 to 256.
+
+      routeAnnotations: #To add the Annotations of GSLBs, Below routeAnnotations can be specified under each target in the GSLB Deployment payload. ex: haproxy timeout, disable cookies,etc
+
+        - <annotation-key1>: <val1>  #haproxy.router.openshift.io/balance: roundrobin
+
+          <annotation-key2>: <val2>  #haproxy.router.openshift.io/cookie_name: sample
+
+          <annotation-key3>: <val3>  #haproxy.router.openshift.io/timeout: 10m
+
+  ##The following attibutes describe the behavior of the Global Server Load Balancer
+
+  routingAlgorithm: <RoundRobin> #RoundRobin or RTT
+
+  persistenceType: <SourceIP> #SourceIP or None, defaults to SourceIP if not provided
+
+  timeout: <2> #minutes SourceIP persistence will last
+
+  description: <"a description of this gslb for info purposes">
+
+  healthProbe: ##This section describes how to probe your app for availability
+
+    protocol: https #https is the only allowed value at this time
+
+    port: 443 #443 is the only allowed value at this time
+
+    url: </probe.html> #This path/page will be unprotected in Ping SSO
+
+    requestType: <GET> #Probe HTTP Request Type
+
+    intervalInSeconds: <30> #How frequently should the GSLB probe the app
+
+    downTimeInSeconds: <60> #Once down, how long to wait to re-probe the app
+
+    httpResponseCode: <200> #Expected HTTP Response Code for the probe
+
+    retries: <3> #How many times must the probe fail before the target is taken out of service
+
+    successRetries: <1> #Once down, how many successful probes before returning the target to service
+
+    responseTimeoutInSeconds: <15> #How long to wait for a probe to respond before treating it as a failure

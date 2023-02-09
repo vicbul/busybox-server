@@ -1,0 +1,109 @@
+apiVersion: cae.cisco.com/v1
+kind: GSLBDeployment
+metadata:
+  name: busybox-server-gslb
+spec:
+  #  delete: true
+  globalHostname: ecdp-busybox-server.cisco.com
+  ssoAuthConfig: # gslb sso auth config section
+    provider:
+      idp: duo    # IDP provider duo or okta
+      cors: application  # cors provider for the app: platform or application
+      sso: application  # sso provider for the app: platform or application
+    contexts:
+      #      - context: /api
+      #        contextMatch: prefix   # match type prefix|exact|regex
+      #        policyType: web  # policy type web|api|public
+      - context: /helloworld            # health probe url must be public
+        contextMatch: prefix
+        policyType: public
+      - context: /
+        contextMatch: prefix
+        policyType: web
+    policy:
+      web:
+        allow:
+          - paths:
+              - path: /
+                pathMatch: prefix
+            when:
+              - kind: userId
+                values:
+                  - '*'
+      api:
+        allow:
+          - paths:
+              - path: /api
+                pathMatch: prefix
+            when:
+              - kind: clientId # <emailId or userId or memberOf or accessLevel>
+                values:
+                  - '*'
+  targets: # update the targets with BG services w.r.t weights
+    - name: busybox-server-rcdn-gslb
+      globalRouteName: busybox-server-rcdn-gslb
+      cluster: cae-prd-rcdn
+      projectName: ecdp-prod
+      serviceName: busybox-server
+      targetPort: http
+      routeAnnotations: # update route annotations based upon requiment, below are few one's that used in CAE
+        haproxy.router.openshift.io/balance: "roundrobin"
+        haproxy.router.openshift.io/cookie_name: "sample"
+        haproxy.router.openshift.io/disable_cookies: "false"
+        haproxy.router.openshift.io/timeout: "10m"
+      enable: true
+      failoverMode: active
+      weight: 0
+    #      routeAlternateBackends:
+    #      - serviceName: <PGRN OR PBLU SVC>
+    #        weight: 100
+    - name: busybox-server-rtp-gslb
+      globalRouteName: busybox-server-rtp-gslb
+      cluster: cae-prd-rtp
+      projectName: ecdp-prod
+      serviceName: busybox-server
+      targetPort: http
+      routeAnnotations:
+        haproxy.router.openshift.io/balance: "roundrobin"
+        haproxy.router.openshift.io/cookie_name: "sample"
+        haproxy.router.openshift.io/disable_cookies: "false"
+        haproxy.router.openshift.io/timeout: "10m"
+      enable: true
+      failoverMode: passive
+      weight: 0
+        #      routeAlternateBackends:
+        #      - serviceName: <PGRN OR PBLU SVC>
+        #        weight: 100
+    - name: busybox-server-alln-gslb
+      globalRouteName: busybox-server-alln-gslb
+      cluster: cae-prd-alln
+      projectName: ecdp-prod
+      serviceName: busybox-server
+      targetPort: http
+      routeAnnotations:
+        haproxy.router.openshift.io/balance: "roundrobin"
+        haproxy.router.openshift.io/cookie_name: "sample"
+        haproxy.router.openshift.io/disable_cookies: "false"
+        haproxy.router.openshift.io/timeout: "10m"
+      enable: true
+      failoverMode: passive
+      weight: 0
+#      routeAlternateBackends:
+#      - serviceName: <PGRN OR PBLU SVC>
+#        weight: 100
+  stickyRouting: true
+  routingAlgorithm: RoundRobin
+  backupAlgorithm: RTT
+  timeout: 60
+  description: "Blue Green with one active and one passive target,BG services has to be unique in each target,servicePortName can be 8080 or other ports if targetport of SVC has multiple ports "
+  healthProbe:
+    protocol: HTTPS
+    port: 443
+    url: /helloworld
+    requestType: GET
+    intervalInSeconds: 20
+    downTimeInSeconds: 30
+    httpResponseCode: 200
+    retries: 3
+    successRetries: 1
+    responseTimeoutInSeconds: 15

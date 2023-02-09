@@ -1,0 +1,17 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: busybox-server-route-prd
+  namespace: ecdp-prod
+spec:
+  host: ecdp-busybox-server-prd.cisco.com
+  to:
+    kind: Service
+    name: busybox-server
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: None
+  wildcardPolicy: None

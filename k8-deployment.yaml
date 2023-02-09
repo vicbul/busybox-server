@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: busybox-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: busybox-server
+  template:
+    metadata:
+      labels:
+        app: busybox-server
+    spec:
+      containers:
+      - name: busybox-server
+        image: containers.cisco.com/vbulnes/busybox-server:1.1
+        ports:
+        - containerPort: 8080
